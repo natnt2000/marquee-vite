@@ -11,7 +11,8 @@ customElements.define(
       let speed = this.getAttribute("speed") ? Number(this.getAttribute("speed")) : 100;
       let play = this.getAttribute("play") || true;
       let gap = this.getAttribute("gap") || "0px";
-      let className = this.getAttribute('class') ?? '';
+      let className = this.getAttribute('class') || '';
+      let gradient = this.getAttribute('gradient') || false;
 
       this.#shadowRoot = this.attachShadow({ mode: "open" });
 
@@ -96,6 +97,7 @@ customElements.define(
         --pause-on-click: ${pauseOnClick ? 'paused' : 'running'}"
         class="marquee-container ${className}"
       >
+        ${gradient ? `<div class="gradient" data-testid="marquee-gradient" />`: ``}
         <div class="marquee">
           <slot></slot>
         </div>
@@ -121,5 +123,16 @@ customElements.define(
       resizeObserver.observe(marqueeContainer);
       resizeObserver.observe(marquee);
     }
+
+    connectedCallback() {
+      let slots = this.#shadowRoot.querySelectorAll('slot');
+
+      slots[0].addEventListener('slotchange', function(_) {
+          let nodes = slots[0].assignedNodes();
+          nodes.forEach(node => {
+            slots[1].appendChild(node.cloneNode(true))
+          })
+      });
+  }
   }
 );
