@@ -9,8 +9,8 @@ customElements.define(
       let pauseOnClick = this.getAttribute("pauseOnClick") || false;
       let direction = this.getAttribute("direction") || "left";
       let speed = this.getAttribute("speed") ? Number(this.getAttribute("speed")) : 100;
-      let play = this.getAttribute("play") || true;
-      let gap = this.getAttribute("gap") || "0px";
+      let play = this.getAttribute("play") || "true";
+      let gap = this.getAttribute("gap") || "50px";
       let className = this.getAttribute('class') || '';
       let gradient = this.getAttribute('gradient') || false;
 
@@ -44,6 +44,8 @@ customElements.define(
           animation: scroll var(--duration) linear infinite;
           animation-play-state: var(--play);
           animation-direction: var(--direction);
+          gap: var(--gap, 0);
+          margin-right: var(--gap, 0);
         }
       
         @keyframes scroll {
@@ -91,7 +93,7 @@ customElements.define(
       <div
         style="${style}
         --gap: ${gap}; 
-        --play: ${play}; 
+        --play: ${play === 'true' ? "running": "paused"}; 
         --direction: ${ direction === "left" ? "normal" : "reverse"}; 
         --pause-on-hover: ${pauseOnHover ? "paused" : "running"}; 
         --pause-on-click: ${pauseOnClick ? 'paused' : 'running'}"
