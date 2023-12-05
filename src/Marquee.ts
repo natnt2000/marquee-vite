@@ -2,20 +2,23 @@ customElements.define(
   "x-marquee",
   class extends HTMLElement {
     #shadowRoot;
+    private customStyle = this.getAttribute("style") || "";
+    private gap = this.getAttribute("gap") || "50px";
+    private pauseOnHover = this.getAttribute("pause-on-hover") || false;
+    private pauseOnClick = this.getAttribute("pause-on-click") || false;
+    private direction = this.getAttribute("direction") || "left";
+    private speed = this.getAttribute("speed")
+      ? Number(this.getAttribute("speed"))
+      : 100;
+    private play = this.getAttribute("play") || "true";
+
+    private customClassName = this.getAttribute("class") || "";
+    private gradient = this.getAttribute("gradient") || false;
+
     constructor() {
       super();
-      let style = this.getAttribute("style") || "";
-      let pauseOnHover = this.getAttribute("pauseOnHover") || false;
-      let pauseOnClick = this.getAttribute("pauseOnClick") || false;
-      let direction = this.getAttribute("direction") || "left";
-      let speed = this.getAttribute("speed") ? Number(this.getAttribute("speed")) : 100;
-      let play = this.getAttribute("play") || "true";
-      let gap = this.getAttribute("gap") || "50px";
-      let className = this.getAttribute('class') || '';
-      let gradient = this.getAttribute('gradient') || false;
 
       this.#shadowRoot = this.attachShadow({ mode: "open" });
-
       this.#shadowRoot.innerHTML = `
       <style>
         .marquee-container {
@@ -91,15 +94,21 @@ customElements.define(
       </style>
 
       <div
-        style="${style}
-        --gap: ${gap}; 
-        --play: ${play === 'true' ? "running": "paused"}; 
-        --direction: ${ direction === "left" ? "normal" : "reverse"}; 
-        --pause-on-hover: ${pauseOnHover ? "paused" : "running"}; 
-        --pause-on-click: ${pauseOnClick ? 'paused' : 'running'}"
-        class="marquee-container ${className}"
+        style="
+        ${this.customStyle}
+        --gap: ${this.gap}; 
+        --play: ${this.play === "true" ? "running" : "paused"}; 
+        --direction: ${this.direction === "left" ? "normal" : "reverse"}; 
+        --pause-on-hover: ${this.pauseOnHover ? "paused" : "running"}; 
+        --pause-on-click: ${this.pauseOnClick ? "paused" : "running"}"
+        class="marquee-container ${this.customClassName}
+        "
       >
-        ${gradient ? `<div class="gradient" data-testid="marquee-gradient" />`: ``}
+        ${
+          this.gradient
+            ? `<div class="gradient" data-testid="marquee-gradient" />`
+            : ``
+        }
         <div class="marquee">
           <slot></slot>
         </div>
@@ -111,15 +120,15 @@ customElements.define(
       const marqueeContainer = this.#shadowRoot.querySelector(
         ".marquee-container"
       ) as Element;
-      const marquee = this.#shadowRoot.querySelector(
-        ".marquee"
-      ) as Element;
+      const marquee = this.#shadowRoot.querySelector(".marquee") as Element;
       const resizeObserver = new ResizeObserver(() => {
         const duration =
-        marquee.clientWidth < marqueeContainer.clientWidth
-        ? marqueeContainer.clientWidth / speed
-        : marquee.clientWidth / speed
-        this.#shadowRoot.querySelector<HTMLElement>('.marquee-container')?.style.setProperty('--duration', `${duration}s`)
+          marquee.clientWidth < marqueeContainer.clientWidth
+            ? marqueeContainer.clientWidth / this.speed
+            : marquee.clientWidth / this.speed;
+        this.#shadowRoot
+          .querySelector<HTMLElement>(".marquee-container")
+          ?.style.setProperty("--duration", `${duration}s`);
       });
 
       resizeObserver.observe(marqueeContainer);
@@ -127,14 +136,39 @@ customElements.define(
     }
 
     connectedCallback() {
-      let slots = this.#shadowRoot.querySelectorAll('slot');
+      this.observeSlotChanges();
 
-      slots[0].addEventListener('slotchange', function(_) {
-          let nodes = slots[0].assignedNodes();
-          nodes.forEach(node => {
-            slots[1].appendChild(node.cloneNode(true))
-          })
+      let slots = this.#shadowRoot.querySelectorAll("slot");
+      slots[0].addEventListener("slotchange", function (_) {
+        let nodes = slots[0].assignedNodes();
+        nodes.forEach((node) => {
+          slots[1].appendChild(node.cloneNode(true));
+        });
       });
-  }
+    }
+
+    observeSlotChanges() {
+      let slot = this.#shadowRoot.querySelector("slot") as HTMLSlotElement;
+      const marqueeContainer =
+        this.#shadowRoot.querySelector(".marquee-container");
+      const marquee = this.#shadowRoot.querySelectorAll(".marquee");
+      const slottedElements = slot?.assignedElements();
+      const totalWidth = slottedElements?.reduce(
+        (acc, el) => acc + el.clientWidth,
+        0
+      );
+      const numDuplicates =
+        Math.ceil((marqueeContainer?.clientWidth ?? 0) / totalWidth) - 1;
+
+      let nodes = slot.assignedNodes();
+
+      for (let i = 0; i < numDuplicates; i++) {
+        nodes.forEach((node) => {
+          marquee.forEach((m) => {
+            m?.appendChild(node.cloneNode(true));
+          });
+        });
+      }
+    }
   }
 );
